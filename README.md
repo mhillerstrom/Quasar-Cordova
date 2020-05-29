@@ -1,6 +1,6 @@
 # QuasarCordovaApp (fullstack mobile first app)
 
-> AQuasar Framework app with Vue 2 and FeathersJS 4 fullstack app with authentication and email support implemented with mobile first in mind.
+> A Quasar Framework app with Vue 2 and FeathersJS 4 fullstack app with authentication and email support implemented with mobile first in mind.
 
 ## About
 
@@ -51,6 +51,34 @@ Then you
 ```bash
 cd Quasar-Cordova
 npm install
+```
+
+### Set environment
+To be able to run, you first have to create a file named `environment-dev.env` in `Quasar-Cordova` with the following contents:
+
+```env
+# Development host - please insert your ip (not localhost)
+HOST=<your-ip>
+PORT=8081
+CLIENTPORT=8080
+PROTOCOL=http
+
+# Database definitions (DEV and TEST)
+DATABASE_URL=mongodb://db:27017/MyAppDevDB
+DATABASE_TEST_URL=mongodb://db:27017/MyAppTestDB
+
+# Should we suppress email-mania all together?
+SUPPRESS_EMAIL=false
+# Should we send a test message to COMPLAINT_EMAIL at startup?
+SEND_TEST_EMAIL=false
+
+# Allowed email address formats:  dd@disney.com   or the friendlier:  Donald Duck <dd@disney.com>
+COMPLAINT_EMAIL=MyApp Complaints <your-gmail-account>
+GMAIL=MyApp <your-gmail-account>
+GMAIL_PASSWORD=<your-gmail-key>
+
+COOKIE=myapp-jwt
+ISSUER=myapp
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
