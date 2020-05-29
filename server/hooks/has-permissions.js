@@ -1,0 +1,24 @@
+const _ = require('lodash')
+const errors = require('@feathersjs/errors')
+
+// eslint-disable-next-line no-unused-vars
+module.exports = function hasPermissions (permission) {
+  const permissions = Array.from(arguments) || []
+
+  return function (hook) {
+    if (!hook.params.provider) { return hook }
+
+    if (_.get(hook, 'params.user.role') === 'admin') { return hook }
+
+    const name = _.get(hook, 'params.user.name') || _.get(hook, 'params.user.email')
+
+    if (!_.get(hook, 'params.user')) {
+      // eslint-disable-next-line quotes
+      throw new errors.NotAuthenticated(`Cannot read user permissions. The current user is missing. You must not be authenticated.`)
+    } else if (!_.get(hook, 'params.user.permissions')) {
+      throw new errors.GeneralError(`${name} does not have any permissions.`)
+    } else if (!permissions.every(p => hook.params.user.permissions.includes(p))) {
+      throw new errors.Forbidden(`${name} does not have permission to do that.`)
+    }
+  }
+}

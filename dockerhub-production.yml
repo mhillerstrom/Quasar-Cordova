@@ -1,0 +1,95 @@
+version: '3'
+volumes:
+  dbdata:
+  acme:
+networks:
+  web:
+services:
+  db:
+    image: mongo
+    command: --smallfiles
+    networks:
+      - web
+    volumes:
+      - dbdata:/data/db
+    deploy:
+      restart_policy:
+        condition: on-failure
+  web:
+    image: <your repository>/<your app>:latest
+    networks:
+      - web
+    env_file:
+      - environment.env
+    depends_on:
+      - db
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 15s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.docker.network=web"
+        - "traefik.port=80"
+        - "traefik.enable=true"
+        - "traefik.frontend.rule=PathPrefix:/;"
+        - "traefik.frontend.rule=Host:${LETS_ENCRYPT_DOMAIN};"
+        - "traefik.backend.loadbalancer.sticky=true"
+  loadbalancer:
+    image: traefik
+    command: --docker \
+      --docker.swarmmode \
+      --docker.watch \
+      --web \
+      --defaultEntryPoints='http,https' \
+      --entryPoints='Name:http Address::80' \
+      --entryPoints='Name:https Address::443 TLS' \
+      --docker.exposedbydefault=false \
+      --acme \
+      --acme.entryPoint='https' \
+      --acme.email=${LETS_ENCRYPT_EMAIL} \
+      --acme.ondemand=false \
+      --acme.acmelogging=true \
+      --acme.onhostrule=true \
+      --acme.caserver="https://acme-staging.api.letsencrypt.org/directory" \
+      --acme.storage='/etc/traefik/acme/acme.json'
+      --loglevel=DEBUG
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - acme:/etc/traefik/acme
+    deploy:
+      restart_policy:
+        condition: any
+      mode: replicated
+      replicas: 1
+      update_config:
+        delay: 2s
+      placement:
+         constraints: [node.role == manager]
+    networks:
+      - web
+    depends_on:
+      - web
+  visualizer:
+    image: dockersamples/visualizer:stable
+    stop_grace_period: 1m30s
+    networks:
+      - web
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - "traefik.docker.network=web"
+        - "traefik.port=8080"
+        - "traefik.frontend.rule=PathPrefix:/;"
+        - "traefik.frontend.rule=Host:monitor.${LETS_ENCRYPT_DOMAIN};"
+        - "traefik.enable=true"
+        - "traefik.backend.loadbalancer.sticky=true"

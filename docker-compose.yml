@@ -1,0 +1,25 @@
+version: '3'
+services:
+  db:
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+      - "37017:37017"
+  web:
+    build: .
+    ports:
+      - "8081:8081"
+      - "9222:9222"
+    env_file:
+      - environment-dev.env
+    links:
+      - db:db
+    volumes:
+      - ./server:/var/www/server:rw
+      - ./src:/var/www/src:rw
+      - ./config:/var/www/config:rw
+      - ./dist/spa:/var/www/www:rw
+    links:
+      - db:db
+

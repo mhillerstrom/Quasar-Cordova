@@ -1,0 +1,29 @@
+FROM gzlock/node-pm2
+
+################## ESTABLISH DIRECTORIES ######################
+
+# add system user 'myaid' to run under (we match with primary developer uid `id -u` and gid `id -gn`)
+RUN groupadd -f -g 20 staff
+RUN useradd -r -N -u 501 myaid -g staff
+USER myaid
+
+# Establish our webfolder root
+WORKDIR /var/www/
+COPY package.json /var/www/
+
+# Install and cache npm dependencies unless package.json changes
+
+ENV NODE_ENV=production
+COPY package.json /var/www/package.json
+RUN npm install
+
+COPY public/ /var/www/public
+COPY config/ /var/www/config
+COPY server/ /var/www/server
+
+################## END DIRECTORIES ######################
+
+# Port 9222 is nodejs debug port
+EXPOSE 80
+
+CMD ["pm2", "start", "server", "--no-daemon"]
