@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import Vue from 'vue'
 import _ from 'lodash'
 
@@ -100,6 +101,7 @@ const a_or_an = function a_or_an (field) {
 }
 
 const confirm = function confirm (message, store) {
+  // eslint-disable-next-line no-async-promise-executor
   return new Promise(async resolve => {
     store.modalConfig = {
       answer: resolve,

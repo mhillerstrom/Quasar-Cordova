@@ -1,6 +1,8 @@
-const p = require('../patterns.service.js');
-const y = require('yup');
+// eslint-disable-next-line no-unused-vars
+const p = require('../patterns.service.js')
+const y = require('yup')
 
+// eslint-disable-next-line no-unused-vars
 const colors = [
   '#1ABC9C',
   '#16A085',
@@ -17,10 +19,10 @@ const colors = [
   '#F39C12',
   '#E74C3C',
   '#C0392B'
-];
+]
 
 module.exports = y.object({
   email: y.string().required().email(),
   password: y.string().required(),
   name: y.string()
-});
+})

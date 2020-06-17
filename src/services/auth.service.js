@@ -80,7 +80,7 @@ const auth = {
     if (!err) {
       notify.success(`Hello ${foundUser.name || foundUser.email}`)
       console.log(`auth.service login(success): auth.currentUser=${JSON.stringify(auth.currentUser)}`)
-      feathers.emit('FeathersLoggedIn', true)
+      feathers.emit('FeathersIsLoggedIn', true)
       return auth.currentUser
     } else {
       notify.warning(err.message)
@@ -99,7 +99,7 @@ const auth = {
 
     feathers.set('user', null)
     auth.currentUser = null
-    feathers.emit('FeathersLoggedIn', false)
+    feathers.emit('FeathersIsLoggedIn', false)
   },
 
   signup: async user => {
@@ -305,10 +305,10 @@ const auth = {
   getToken: () => feathers.get('token'),
 
   isLoggedIn: () => {
-    return auth.__authenticate().then(response => {
+    return auth.__authenticate().then(_response => {
       auth.currentUser = feathers.get('user')
       return auth.currentUser
-    }, err => {
+    }, _err => {
       notify.debug('Currently not logged in')
       return false
     })
@@ -326,7 +326,7 @@ const auth = {
         const privs = _.get(auth, 'currentUser.permissions')
 
         return !privs || (!privs.includes(permissionName) && _.get(auth, 'currentUser.role') !== 'admin')
-      }, err => {
+      }, _err => {
         return false
       })
     } else {

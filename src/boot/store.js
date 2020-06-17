@@ -9,5 +9,6 @@ export default ({ app, router, Vue }) => {
   app.data = {
     store
   }
+  // eslint-disable-next-line no-undef
   prepareConfirm(app.data.store)
 }

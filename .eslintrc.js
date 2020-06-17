@@ -45,6 +45,8 @@ module.exports = {
     'process': true,
     'Capacitor': true,
     'chrome': true,
+
+    // The following are application specific globals
     'notify': true,
     'api': true,
     'feathers': true,
@@ -53,7 +55,9 @@ module.exports = {
     'parseErrors': true,
     '_': true,
     'to': true,
-    'syncList': true
+    'syncList': true,
+    'prepareSyncListOffline': true,
+    'syncListOffline': true
   },
 
   // add your custom rules here

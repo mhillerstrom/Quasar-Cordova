@@ -18,7 +18,7 @@ const routes = [
       },
       {
         path: 'Main',
-        name: 'Main page',
+        name: 'Home',
         component: () => import('pages/Index.vue'),
         meta: {
           icon: 'home',

@@ -53,7 +53,7 @@ export default {
 
   mounted () {
     const self = this
-    notify.success('Welcome! Please login to continue...')
+    if (!auth.currentUser) notify.success('Welcome! Please login to continue...')
 
     // We listen for teh 'setLeftDrawer' event to be able to sync with child component(s)
     this.$root.$on('setLeftDrawer', value => (self.leftDrawerOpen = value))
@@ -68,11 +68,7 @@ export default {
     // Make sure updates to messages are copied to all connected clients
     // eslint-disable-next-line no-undef
     prepareSyncList(this.$store)
-    syncList('messages', 'messages')
-
-    if (this.$route.path === '/' && !auth.currentUser) {
-      this.$router.push({ path: '/Login', history: false })
-    }
+    syncList('messages' /* 'offClient-messages' */, 'messages', '_id')
   },
   computed: {
     todaysDate: function () {

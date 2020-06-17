@@ -7,7 +7,9 @@
 // https://quasar.dev/quasar-cli/quasar-conf-js
 /* eslint-env node */
 
-module.exports = function (/* ctx */) {
+const sourceMapType = 'eval-source-map'
+
+module.exports = function (ctx) {
   return {
     // app boot file (/src/boot)
     // --> boot files are part of "main.js"
@@ -74,7 +76,8 @@ module.exports = function (/* ctx */) {
 
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-build
     build: {
-      devTool: 'eval-source-map',
+      devTool: sourceMapType,
+      modern: true,
 
       vueRouterMode: 'hash', // available values: 'hash', 'history'
 
@@ -100,16 +103,17 @@ module.exports = function (/* ctx */) {
       //   })
       // }
       extendWebpack (cfg) {
+        cfg.devtool = sourceMapType // Due to bug between Quasar and Webpack
         // do something with Electron main process Webpack cfg
-        // cfg.module.rules.push({
-        //   enforce: 'pre',
-        //   test: /\.(js|vue)$/,
-        //   loader: 'eslint-loader',
-        //   exclude: /node_modules/
-        // })
         cfg.module.rules.push({
           test: /\.pug$/,
           loader: 'pug-plain-loader'
+        })
+        cfg.module.rules.push({
+          enforce: 'pre',
+          test: /\.(js|vue)$/,
+          loader: 'eslint-loader',
+          exclude: /node_modules/
         })
       }
     },
@@ -117,7 +121,8 @@ module.exports = function (/* ctx */) {
     // Full list of options: https://quasar.dev/quasar-cli/quasar-conf-js#Property%3A-devServer
     devServer: {
       https: false,
-      port: 8080,
+      port: ctx.mode.spa ? 8080
+        : (ctx.mode.pwa ? 8088 : 8090),
       open: false // opens browser window automatically
     },
 

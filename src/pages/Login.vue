@@ -118,6 +118,7 @@ export default {
       this.$q.loading.show({ message: 'Logging in...' })
 
       // Authenticate
+      // eslint-disable-next-line no-unused-vars
       const [err, result] = await to(auth.login(user))
 
       // Remove modal
@@ -136,7 +137,7 @@ export default {
     signup: async function (user) {
       // Validate user data
       const valid = await checkValid(user, 'users')
-console.log(`login.vue signup(1): user='${JSON.stringify(user)}', valid='${JSON.stringify(valid)}'`)
+      console.log(`login.vue signup(1): user='${JSON.stringify(user)}', valid='${JSON.stringify(valid)}'`)
       if (valid) {
         this.errorsSummary = ''
 

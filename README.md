@@ -194,6 +194,13 @@ Quasar-Cordova
   + node_modules  # Automatically populated by `npm`
   + test          # Server Mocha tests (maybe)
 ```
+## Use standard cli's for scaffolding etc.
+You can use both the Quasar cli (`quasar`), the Cordova cli (`cordova`), and the FeathersJS cli (`feathers`), for scaffolding and adding bits and pieces. Find further info using one (or more) of the following commands
+```sh
+quasar --help     # Execute in Quasar-Cordova directory
+cordova --help    # Execute in Quasar-Cordova/src-cordova directory
+feathers --help   # Execute in Quasar-Cordova directory
+```
 
 ## Allowing trusted people to look at your work in progress
 When developing it is often useful to get input from others in order to get the design just right. But how do you do this without going through the full hassle of establishing a site, generating the production versions, and publishing it all to the site? Well, there is very handy way by built-in functionality, `localhost.run`, of `ssh`.

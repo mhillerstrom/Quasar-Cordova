@@ -49,28 +49,20 @@ function liveSyncWithServer (service, storeProperty, idProperty = '_id', store) 
   // This line disables the service from running server side when doing things like SSR with Vue
   if (typeof window === 'undefined') { return false }
 
-  let name = 'offClient-' + service
-  let handle = feathers.service(service)
-  if (handle._clientServiceName) {
-    name = handle._clientServiceName
-    handle = feathers.service(handle._clientServiceName)
-  }
-  console.log(`>>> liveSyncWithServer name: ${name} <<<<<`)
-
   // Pre-inputs the store, storeProperty and idProperty values since the event listeners won't provide that data
   const updateItemsInStore = _.partialRight(updateLocalItems, store, storeProperty, idProperty)
 
   // Adds items to the local list that were added to the server
-  handle.on('created', (msg, _ctx) => updateItemsInStore(msg))
+  feathers.service(service).on('created', updateItemsInStore)
 
   // Updates items in local list that were patched from the server
-  handle.on('patched', (msg, _ctx) => updateItemsInStore(msg))
+  feathers.service(service).on('patched', updateItemsInStore)
 
   // Updates items in local list that were updated from the server
-  handle.on('updated', (msg, _ctx) => updateItemsInStore(msg))
+  feathers.service(service).on('updated', updateItemsInStore)
 
   // Removes items from local list that were removed from the server
-  handle.on('removed', (items, _ctx) => {
+  feathers.service(service).on('removed', items => {
     items = _.castArray(items)
 
     convertStoreArrayToHash(store, storeProperty, idProperty)

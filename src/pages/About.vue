@@ -12,7 +12,7 @@
           ul
             li Touch: {{$q.platform.has.touch}}
             li webStorage: {{$q.platform.has.webStorage}}
-            li mobile: {{$q.platform.is.mobile ? $q.platform.is.mobile : 'no'}}
+            li mobile: {{$q.platform.is.mobile === true}}
             li screen: {{$q.screen.width}} x {{$q.screen.height}}
         li OS: {{$q.platform.is.platform}}
     p.q-mx-md ...and the rest is silence...

@@ -2,55 +2,57 @@
 div
   .text-h4.q-my-lg.q-mx-md.text-grey-6.justify-start DB Messages
   .q-page.flex
-    .q-list.q-mx-md(v-if="isLoggedIn()" style="width:100%")
-      .q-item-label.text-grey-8.q-mb-md(header) Got {{messageCount}} {{plural(messageCount,"message","messages")}} from store
-      q-scroll-area.bg-grey-1(style="width:100%;height:200px;")
-        q-list.reverse-order(bordered separator)
-          q-slide-item(
-            v-for="message in messages"
-            :key="message._id"
-            @right="onSlideLeft"
-            right-color="grey-12"
-            clickable
-            @click="showDetails(message);restoreSlide()"
-            v-ripple
-            style="height:65px"
-          )
-            template.bg-grey-5(v-slot:right)
-              .row.text-align-bottom.items-center
-                .col-4.bg-red-6.action-button(@click.stop="onDelete(message._id);restoreSlide()")
-                  div.q-mt-lg(align="center" )
-                    q-icon(name="delete")
-                  div(align="center") Delete
-                .col-4.bg-green-6.action-button(@click.stop="onEdit(message._id);restoreSlide()")
-                  div.q-mt-lg(align="center" )
-                    q-icon(name="edit")
-                  div(align="center") Edit
-            q-item
-              q-item-section
-                q-icon(name="sync-disabled")
-                q-item-label.message-date(overline) {{dateTime(message.updatedAt)}} by {{message.user.name}}
-                q-item-label.message-text.ellipsis-2-lines {{message.text}}
+    q-item-label(header) Got {{messageCount}} {{plural(messageCount,"message")}} from store
 
-                q-menu(
-                  touch-position
-                  context-menu
-                )
-                  q-list(dense style="min-width: 100px")
-                    q-item(clickable v-close-popup)
-                      q-item-section(@click.stop="onEdit(message._id)") Edit
-                    q-item(clickable v-close-popup)
-                      q-item-section(@click.stop="onDelete(message._id)") Delete
+    <!-- Scroll area for messages -->
+    q-scroll-area(v-if="isLoggedIn()" style="width:100%;height:200px;")
+      q-list.q-mx-md.reverse-order(bordered separator)
+        q-slide-item.list-item(
+          v-for="message in messages"
+          :key="message.uuid"
+          @right="onSlideLeft"
+          right-color="grey-12"
+          clickable
+          @click="showDetails(message);restoreSlide()"
+          v-ripple
+        )
+          template.bg-grey-5(v-slot:right)
+            .row.text-align-bottom.items-center
+              .col-4.bg-red-6.action-button(@click.stop="onDelete(message._id);restoreSlide()")
+                div.q-mt-lg(align="center" )
+                  q-icon(name="delete")
+                div(align="center") Delete
+              .col-4.bg-green-6.action-button(@click.stop="onEdit(message._id);restoreSlide()")
+                div.q-mt-lg(align="center" )
+                  q-icon(name="edit")
+                div(align="center") Edit
+          q-item.list-item
+            q-item-section(top style="margin-top:0")
+              q-item-label.message-date(overline) {{dateTime(message.updatedAt)}} by {{userName(message)}}
+              q-item-label.message-text.ellipsis-2-lines {{message.text}}
 
-      q-input.q-ma-md(v-model="text"
-              type="text"
-              placeholder="Type new message"
-              label="Add message"
-              @keyup.enter="addMessage(text)"
-      )
-        template(v-slot:append)
-          q-icon.text-primary(name="add_circle" @click="addMessage(text)")
+              q-menu(
+                touch-position
+                context-menu
+              )
+                q-list(dense style="min-width: 100px")
+                  q-item(clickable v-close-popup)
+                    q-item-section(@click.stop="onEdit(message._id)") Edit
+                  q-item(clickable v-close-popup)
+                    q-item-section(@click.stop="onDelete(message._id)") Delete
+
     .q-h5.q-mx-md.q-my-lg.text-grey-6(v-else) You have to login to see messages
+
+    <!-- Add new messages -->
+    q-input.q-ma-md(v-model="text"
+            type="text"
+            placeholder="Type new message"
+            label="Add message"
+            @keyup.enter="addMessage(text)"
+            style="width:100%"
+    )
+      template(v-slot:append)
+        q-icon.text-primary(name="add_circle" @click="addMessage(text)")
 
     <!-- Modal confirm dialogue -->
     q-dialog(v-model="confirm" persistent)
@@ -102,7 +104,7 @@ div
             .col {{dateTime(showMessage.updatedAt)}}
           .row
             .col-2.col-xs-4.text-blue-9 By:
-            .col {{showMessage.user.name}} &lt;{{showMessage.user.email}}&gt;
+            .col {{userName(showMessage)}} &lt;{{userEmail(showMessage)}}&gt;
 
         q-card-actions(align="right")
           q-btn(label="Return" color="primary" v-close-popup @click="details=false")
@@ -120,7 +122,6 @@ export default {
   store: ['api', 'auth', 'messages', 'modalConfig'],
   data () {
     return {
-      model: null,
       text: '',
       item: null,
       reset: null,
@@ -159,18 +160,55 @@ export default {
     isLoggedIn: function () {
       return auth.currentUser !== null
     },
-    addMessage: async function (text) {
-      if (text === '' || text === null) { return }
+    userName: function (item) {
+      let name = 'Unknown (offline)'
+      if (item.user && item.user.name) {
+        name = item.user.name
+      } else if (auth.currentUser && item.userId === auth.currentUser._id) {
+        name = auth.currentUser.name
+      }
 
-      const [err, res] = await api.messages.upsert({ text })
+      return name
+    },
+    userEmail: function (item) {
+      let email = 'Unknown (offline)'
+      if (item.user && item.user.email) {
+        email = item.user.email
+      } else if (auth.currentUser && item.userId === auth.currentUser._id) {
+        email = auth.currentUser.email
+      }
+
+      return email
+    },
+    addMessage: async function (txt) {
+      if (txt === '' || txt === null) { return }
+
+      console.log('before await api.messages.create...')
+      // eslint-disable-next-line no-unused-vars
+      const [err, _res] = await api.messages.create({ text: txt })
       if (err) {
-        notify.error(`addMessage failed with error "${parseErrors(err.error)}"`)
+        console.log('notify.error("addMessage failed with error ...)')
+        notify.error(`addMessage failed with error "${parseErrors(err)}"`)
       } else {
         // We do not need to re-read all the messages, as we have set-up liveSync!!!
         this.text = ''
         notify.success('Message added')
-        this.messages[res._id] = res
+        console.log('notify.success("Message added")')
+        // this.messages[res._id] = res
       }
+      // const self = this
+      // api.messages.upsert({ text })
+      //   // eslint-disable-next-line handle-callback-err
+      //   .then(([err, res]) => {
+      //     // We do not need to re-read all the messages, as we have set-up liveSync!!!
+      //     self.text = ''
+      //     notify.success('Message added')
+      //     // this.messages[res._id] = res
+      //   })
+      //   .catch(([err, res]) => {
+      //     notify.error(`addMessage failed with error "${parseErrors(err)}"`)
+      //   })
+      // self.text = ''
     },
 
     onSlideLeft ({ reset }) {
@@ -228,8 +266,8 @@ export default {
       this.details = true
     },
 
-    plural (cnt, singular, multiple) {
-      return cnt !== 1 ? multiple : singular
+    plural (cnt, singular) {
+      return cnt === 1 ? singular : singular + 's'
     },
     dateTime (ts) {
       return formatDate(ts, 'YYYY-MM-DD HH:mm')
@@ -241,18 +279,24 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.reverse-order { /* This can be used for showing messages in reversed order (we fetch in ascending date order) */
+.reverse-order { /* This can be used for showing messages in reversed order (we fetch in ascending date order but show in descending order) */
   display: flex;
   flex-direction: column-reverse;
 }
+.list-item {
+  height: 64px;
+}
+.reverse-order .list-item { /* Fix problem with delimiter of first (i.e. show at bottom) item when .reverse-order is used with q-list */
+  border-top: none;
+  border-bottom: 1px solid lightgrey;
+}
 .message-date {
-  margin-top: -15px;
   font-size: 0.7em;
   letter-spacing: 0em;
 }
 .message-text {
-  height:auto;
-  margin-bottom: 18px;
+/*  height:auto;*/
+/*  margin-bottom: 18px;*/
 }
 .action-button {
   height:80px;

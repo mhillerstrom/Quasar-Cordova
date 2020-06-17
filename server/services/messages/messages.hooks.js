@@ -2,12 +2,14 @@ const { authenticate } = require('@feathersjs/authentication').hooks
 const {
   when,
   populate,
+  dePopulate,
   setNow,
-  isProvider,
+  isProvider
 } = require('feathers-hooks-common')
 const {
   loopItems,
-  associateEffectiveUser
+  associateEffectiveUser,
+  log
 } = require('../../hooks')
 
 const idField = '_id'
@@ -44,16 +46,20 @@ module.exports = {
     ],
     create: [
       authenticate('jwt'),
+      dePopulate(),
+      log(),
       setNow('createdAt', 'updatedAt'),
       associateEffectiveUser()
     ],
     update: [
       authenticate('jwt'),
+      dePopulate(),
       setNow('updatedAt'),
       associateEffectiveUser()
     ],
     patch: [
       authenticate('jwt'),
+      dePopulate(),
       setNow('updatedAt'),
       associateEffectiveUser()
     ],

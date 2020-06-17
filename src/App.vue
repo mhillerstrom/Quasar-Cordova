@@ -7,6 +7,13 @@
 <script >
 
 export default {
-  name: 'App'
+  name: 'App',
+  beforeMount: function () {
+    // If we'r not logged in yet - let's og to the login page
+    if (!auth.currentUser) {
+      this.$router.push({ path: '/Login', history: false })
+    }
+  }
+
 }
 </script>

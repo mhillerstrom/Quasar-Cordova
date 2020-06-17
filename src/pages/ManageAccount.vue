@@ -2,87 +2,90 @@
 div
   .text-h4.q-my-lg.q-mx-md.text-grey-6.justify-start Manage Account
   .q-page.flex
-    div.q-pa-md(style="max-width:320px;width:100%")
-      q-list
-        q-expansion-item(
-          v-show="!isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="perm_identity"
-          label="Enter authorisation code"
-        )
-          q-card
-            q-card-section
-              .row.justify-center
-                form
-                  q-input(type="number" dense label='Authorisation code' v-model="authCode" lazy-rules clearable autocomplete="true" @keyup.enter="authorise(authCode)")
-              .row.q-mt-md.q-mb-lx.justify-center
-                  q-btn(style="width:100%" color="primary" @click="authorise(authCode)") Authorise
+    .row
+      div.q-pa-md(style="max-width:320px;width:100%")
+        q-list
+          q-expansion-item(
+            v-show="!isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="perm_identity"
+            label="Enter authorisation code"
+          )
+            q-card
+              q-card-section
+                .row.justify-center
+                  form
+                    q-input(type="number" dense label='Authorisation code' v-model="authCode" lazy-rules clearable autocomplete="true" @keyup.enter="authorise(authCode)")
+                .row.q-mt-md.q-mb-lx.justify-center
+                    q-btn(style="width:100%" color="primary" @click="authorise(authCode)") Authorise
 
-        q-expansion-item(
-          v-show="!isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="mail"
-          label="Resend authorisation code"
-        )
-          q-card
-            q-card-section
-              q-btn(style="width:100%" color="primary" label="Resend Authorisation code" @click="resendVerificationCode(currentUser.email)")
+          q-expansion-item(
+            v-show="!isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="mail"
+            label="Resend authorisation code"
+          )
+            q-card
+              q-card-section
+                q-btn(style="width:100%" color="primary" label="Resend Authorisation code" @click="resendVerificationCode(currentUser.email)")
 
-        q-expansion-item(
-          v-show="isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="xxxxxxxx_email_multiple"
-          label="Change email"
-        )
-          q-card
-            q-card-section
-              .row.justify-center
-                form
-                  q-input(type='email' dense label='new email' v-model.trim="user.newEmail" :rules="emailValidation()"  lazy-rules clearable)
-                  q-input(type='password' dense label='current password' v-model="user.password" :rules="passwordValidation()"  lazy-rules clearable autocomplete="true")
-              .row.q-mt-md.q-mb-lx.justify-center
-                q-btn(style="width:100%" color="primary" @click="auth.changeMyIdentity(user.password, {email: user.newEmail})") Change Email
+          q-expansion-item(
+            v-show="isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="xxxxxxxx_email_multiple"
+            label="Change email"
+          )
+            div
+              q-card
+                q-card-section
+                  .row.justify-center
+                    form
+                      q-input(type='email' dense label='new email' v-model.trim="user.newEmail" :rules="emailValidation()"  lazy-rules clearable)
+                      q-input(type='password' dense label='current password' v-model="user.password" :rules="passwordValidation()"  lazy-rules clearable autocomplete="true")
+                  .row.q-mt-md.q-mb-lx.justify-center
+                    q-btn(style="width:100%" color="primary" @click="auth.changeMyIdentity(user.password, {email: user.newEmail})") Change Email
 
-        q-expansion-item(
-          v-show="isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="fas fa-key"
-          label="Change password"
-        )
-          q-card
-            q-card-section
-              .row.justify-center
-                form
-                  q-input(type='password' dense label='old password' v-model="user.password" :rules="passwordValidation()"  lazy-rules clearable autocomplete="true")
-                  q-input(type='password' dense label='new password' v-model="user.newPassword" :rules="passwordValidation()"  lazy-rules clearable autocomplete="false")
-              .row.q-mt-md.q-mb-lx.justify-center
-                  q-btn(style="width:100%" color="primary" @click="auth.changePassword(user.password, user.newPassword)") Change Password
+          q-expansion-item(
+            v-show="isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="fas fa-key"
+            label="Change password"
+          )
+            div
+              q-card
+                q-card-section
+                  .row.justify-center
+                    form
+                      q-input(type='password' dense label='old password' v-model="user.password" :rules="passwordValidation()"  lazy-rules clearable autocomplete="true")
+                      q-input(type='password' dense label='new password' v-model="user.newPassword" :rules="passwordValidation()"  lazy-rules clearable autocomplete="false")
+                  .row.q-mt-md.q-mb-lx.justify-center
+                      q-btn(style="width:100%" color="primary" @click="auth.changePassword(user.password, user.newPassword)") Change Password
 
-        q-expansion-item(
-          v-show="isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="fas fa-paper-plane"
-          label="Reset Password"
-        )
-          q-card
-            q-card-section
-              q-btn(style="width:100%" color="red" label="Reset Password" @click="auth.sendResetPassword(user.email)")
+          q-expansion-item(
+            v-show="isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="fas fa-paper-plane"
+            label="Reset Password"
+          )
+            q-card
+              q-card-section
+                q-btn(style="width:100%" color="red" label="Reset Password" @click="auth.sendResetPassword(user.email)")
 
-        q-expansion-item(
-          v-show="isVerified"
-          group="manageGroup"
-          expand-separator
-          icon="fas fa-user-alt-slash"
-          label="Delete account"
-        )
-          q-card
-            q-card-section
-              q-btn(style="width:100%" color="red" label="Delete my account" @click="doDeleteAccount()")
+          q-expansion-item(
+            v-show="isVerified"
+            group="manageGroup"
+            expand-separator
+            icon="fas fa-user-alt-slash"
+            label="Delete account"
+          )
+            q-card
+              q-card-section
+                q-btn(style="width:100%" color="red" label="Delete my account" @click="doDeleteAccount()")
 
     <!-- Modal confirm dialogue -->
     q-dialog(v-model="confirm.show" persistent)
@@ -111,6 +114,7 @@ export default {
         show: false,
         text: ''
       },
+      func: 0,
       user: {
         email: '',
         name: '',
@@ -123,6 +127,12 @@ export default {
   },
 
   computed: {
+    isMobile: function () {
+      return this.$q.platform.is.mobile === true
+    },
+    isDesktop: function () {
+      return this.$q.platform.is.desktop === true
+    },
     isVerified: function () {
       return this.auth && this.auth.currentUser && this.auth.currentUser.isVerified
     },
@@ -192,5 +202,6 @@ export default {
 }
 </script>
 
-<style lang="stylus">
+<style lang="scss">
+
 </style>

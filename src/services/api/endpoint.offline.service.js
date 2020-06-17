@@ -8,7 +8,7 @@ import mongoose from 'mongoose'
 const { Types: { ObjectId } } = mongoose
 
 /**
- * @overview A service that sends get, post, put, and delete requests to the server
+ * @overview A service that sends get, post, put, and delete requests to the server (remote)
  * through http. Allows raw mongoDB queries to be passed to the server.
  * The user creates a new instance of the endpoints service providing an endpoint
  * url to reach and calls api methods on that instance.
@@ -32,11 +32,13 @@ const endpointPrefix = '' // Often '/api/'...
    * Sets up a rest endpoint for the given url so create, find, update, and delete can be performed on it.
    * @constructor
    * @param  {string} endpoint The URL of the server endpoint to reach. `/api/` prefix is already assumed.
+   * @param  {function} queryFn A function returning a query object for limiting sync data (e.g. only users _id)
    * @return {nothing}
    */
-function EndpointOffline (endpoint = '') {
+function EndpointOffline (endpoint = '', queryFn = () => {}) {
   this.endpoint = endpoint
   this.service = null
+  this.queryFn = queryFn
 
   if (endpoint.indexOf('http://') > -1 || endpoint.indexOf('https://') > -1) {
     this.url = endpoint // If the url is a full address then don't modify it
@@ -44,26 +46,33 @@ function EndpointOffline (endpoint = '') {
     this.url = endpointPrefix + this.endpoint
   }
 
-  const clientServiceName = 'client-' + this.url
+  const clientServiceName = 'offClient-' + this.endpoint
 
-  this.serverService = new Realtime(feathers.service(this.url), { uuid: true, updatedAt: true, subscriber: EndpointOffline.subscriber })
-  feathers.use(clientServiceName, owndataMutator({ replicator: this.serverService, multi: true, timeout: 200 }))
+  this.remoteService = feathers.service(this.url)
+  this.realtimeRemoteService = new Realtime(this.remoteService, { uuid: true, updatedAt: true, subscriber: EndpointOffline.subscriber })
+  this.remoteService._clientServiceName = clientServiceName
+  feathers.use(clientServiceName, owndataMutator({ replicator: this.realtimeRemoteService, multi: true, timeout: 200 }))
 
   this.service = feathers.service(clientServiceName)
 
+  // Note: we cannot use feathers.on('login', ...) and feathers.on('logout', ...)
+  // as they are sent before auth.currentUser is populated (/cleared)
   feathers.on('FeathersIsOnline', EndpointOffline.handleConnectionEvent)
-  feathers.on('FeathersLoggedIn', EndpointOffline.handleConnectionEvent)
+  feathers.on('FeathersIsLoggedIn', EndpointOffline.handleConnectionEvent)
 
-  EndpointOffline.serverServices.push({ handle: this.serverService, name: this.url })
-  console.log(`ServerService: typeof ${this.serverService}`)
+  EndpointOffline.remoteServices.push({ handle: this.realtimeRemoteService, name: this.url, queryFn: this.queryFn })
+  console.log(`remoteService: typeof ${this.realtimeRemoteService}`)
 
   if (feathers.isOnline && auth.currentUser) {
-    EndpointOffline.serverServices.forEach((service) => service.handle.connect()
+    EndpointOffline.remoteServices.forEach((service) => service.handle.connect(this.queryFn())
       .then(() => console.log(`===== Connect of endpoint ${service.name} successful!`))
       .catch((err) => console.error(`===== Connect of endpoint ${service.name} failed!!!!`, err)))
   }
+  // TODO: REMOVE!!!!
+  feathers.isOnline = true
+  feathers.emit('FeathersIsOnline', true)
 
-  // this.serverService.connect()
+  // this.remoteService.connect()
   //   .then(() => console.log(`===== Endpoint ${this.url} started.`))
   //   .catch((err) => console.error(`===== Start of endpoint ${this.url} failed!!!!`, err))
 }
@@ -71,7 +80,7 @@ function EndpointOffline (endpoint = '') {
 /**
  * List of all offline-realtime services
  */
-EndpointOffline.serverServices = []
+EndpointOffline.remoteServices = []
 
 EndpointOffline.subscriber = function subscriber (records, { action, eventName, source, record }) {
   console.log(`.replicator event. action=${action} eventName=${eventName} source=${source}`, record)
@@ -83,21 +92,22 @@ EndpointOffline.handleConnectionEvent = function (value) {
     user = auth.currentUser.email
   }
 
-  console.log(`==> Enter: handleConnectionEvent: value=${value}, auth.currentUser=${user}, ${EndpointOffline.serverServices.length} endpoint(s)`)
+  console.log(`==> Enter: handleConnectionEvent: value=${JSON.stringify(value)}, auth.currentUser=${user}, ${EndpointOffline.remoteServices.length} endpoint(s)`)
   if (feathers.isOnline && auth.currentUser) {
     console.log(`==> handleConnectionEvent: value=${value}, auth.currentUser=${user}`)
-    EndpointOffline.serverServices.forEach((service) => {
+    EndpointOffline.remoteServices.forEach((service) => {
       console.log(`===== Connect of endpoint ${service.name}...`)
-      console.log(`service: typeof ${service.handle}`)
-      service.handle.connect()
+      console.log(`service: typeof ${typeof service.handle}`)
+      console.log(`\nquery: ${JSON.stringify(service.queryFn())}\nservice: name ${service.name}`)
+      service.handle.connect(service.queryFn())
         .then(() => console.log(`===== Connect of endpoint ${service.name} successful!`))
         .catch((err) => console.error(`===== Connect of endpoint ${service.name} failed!!!!`, err))
     })
   }
 
   if (/*! feathers.isOnline || */ !auth.currentUser) {
-    console.log(`==> handleConnectionEvent: value=${value}, auth.currentUser=${user}, ${EndpointOffline.serverServices.length} endpoint(s)`)
-    EndpointOffline.serverServices.forEach((service) => {
+    console.log(`==> handleConnectionEvent: value=${JSON.stringify(value)}, auth.currentUser=${user}, ${EndpointOffline.remoteServices.length} endpoint(s)`)
+    EndpointOffline.remoteServices.forEach((service) => {
       console.log(`===== Disconnect endpoint ${service.name}...`)
       console.log(`service: typeof ${service.handle}`)
       service.handle.disconnect()
@@ -112,18 +122,22 @@ EndpointOffline.handleConnectionEvent = function (value) {
    */
 EndpointOffline.prototype.create = function (content) {
   const item = _.clone(content)
+  // As we cannot guarantee that the back-end answers we have to supply the vitals ourselves (_id and uuid)
+  if (!item._id) {
+    item._id = ObjectId()
+  }
   if (!item.uuid) {
     item.uuid = genUuid(true)
   }
   item.userId = auth.currentUser._id
   item.user = auth.currentUser
 
-  // As we cannot guarantee that the back-end answers we have to supply the _id ourselves
-  if (!item._id) {
-    item._id = ObjectId()
-  }
-
-  return to(this.service.create(item))
+  // return to(this.service.create(item))
+  console.log(`Calling create(${JSON.stringify(item)})`)
+  //  const [err, res] = to(this.service.create(item))
+  const res = to(this.service.create(item))
+  console.log(`returned from create(${JSON.stringify(item)}), res=${JSON.stringify(res)}`)
+  return res
 }
 
 /**
@@ -167,11 +181,23 @@ EndpointOffline.prototype.upsert = function (item) {
     rp.uuid = genUuid(true)
   }
 
+  let res = null
+
+  // if (rp._id) {
+  //   return to(this.service.patch(rp._id, rp))
+  // } else {
+  //   return to(this.service.create(rp))
+  // }
   if (rp._id) {
-    return to(this.service.patch(rp._id, rp))
+    console.log(`Calling upsert.patch(${JSON.stringify(item)})`)
+    res = to(this.service.patch(rp._id, rp))
+    console.log(`returned from upsert.patch(${rp._id},${JSON.stringify(item)}), res=${JSON.stringify(res)}`)
   } else {
-    return to(this.service.create(rp))
+    console.log(`Calling upsert.create(${JSON.stringify(item)})`)
+    res = to(this.service.create(item))
+    console.log(`returned from upsert.create(${JSON.stringify(item)}), res=${JSON.stringify(res)}`)
   }
+  return res
 }
 
 /**

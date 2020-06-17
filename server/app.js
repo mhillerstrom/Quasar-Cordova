@@ -15,7 +15,7 @@ const logger = require('./logger')
 const feathers = require('@feathersjs/feathers')
 const configuration = require('@feathersjs/configuration')
 const express = require('@feathersjs/express')
-const socketio = require('@feathersjs/socketio')
+// const socketio = require('@feathersjs/socketio')
 
 const middleware = require('./middleware')
 const services = require('./services')
@@ -42,7 +42,7 @@ api.use(express.urlencoded({ extended: true }))
 // Set up Plugins and providers
 api.configure(mongoose)
 api.configure(express.rest())
-api.configure(socketio())
+// api.configure(socketio())
 
 api.configure(authentication)
 

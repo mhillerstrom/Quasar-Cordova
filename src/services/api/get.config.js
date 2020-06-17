@@ -16,6 +16,7 @@ if (typeof window === 'undefined') {
   }
   if (isTest) {
     config = Object.assign(config, testConfig)
+    config.url = 'http://localhost:3030'
   }
 }
 
